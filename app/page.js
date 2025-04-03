@@ -3,6 +3,39 @@ import { useState, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Image from "next/image";
 
+  const formatMessage = (content) => {
+    // Replace bullet points
+    let formatted = content
+      .replace(/•\s(.*?)(?=(?:•|$))/gs, '<li class="ml-4">$1</li>')
+      .replace(/^\s*[-*]\s(.+)$/gm, '<li class="ml-4">$1</li>');
+
+    // Replace headers
+    formatted = formatted
+      .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mb-2">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mb-2">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-medium mb-2">$1</h3>');
+
+    // Replace code blocks
+    formatted = formatted.replace(
+      /```(.*?)```/gs,
+      '<pre class="bg-gray-100 p-2 rounded-md"><code>$1</code></pre>'
+    );
+
+    // Replace inline code
+    formatted = formatted.replace(
+      /`(.*?)`/g,
+      '<code class="bg-gray-100 px-1 rounded">$1</code>'
+    );
+
+    // Add paragraph spacing
+    formatted = formatted
+      .split("\n\n")
+      .map((para) => `<p class="mb-4">${para}</p>`)
+      .join("");
+
+    return formatted;
+  };
+
 export default function Home() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
@@ -238,7 +271,7 @@ export default function Home() {
         </div>
 
         {/* Chat Container */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mt-10">
+        <div className="bg-white rounded-lg shadow-lg p-6 mt-10 flex flex-col h-[80vh]">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Image
@@ -275,55 +308,136 @@ export default function Home() {
           </div>
 
           {/* Update the pulsing orb colors to match the brand */}
-          <div className="flex flex-col items-center justify-center space-y-4 mb-6">
-            {messages.length === 0 ? (
-              <>
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#00B5B5] to-[#008080] shadow-lg flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-full bg-[#00B5B5] animate-pulse"></div>
-                </div>
+          <div className="flex-1 overflow-y-auto mb-6">
+            <div className="flex flex-col items-center justify-center space-y-4 mb-6">
+              {messages.length === 0 ? (
+                <>
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#00B5B5] to-[#008080] shadow-lg flex items-center justify-center">
+                    <div className="w-20 h-20 rounded-full bg-[#00B5B5] animate-pulse"></div>
+                  </div>
 
-                <p className="text-gray-600 text-center">
-                  What do you want to know?
-                </p>
+                  <p className="text-gray-600 text-center">
+                    What do you want to know?
+                  </p>
 
-                <div className="flex flex-col gap-2 w-full max-w-sm">
-                  <button
-                    onClick={() => handleSuggestionClick("Generate a summary")}
-                    className="w-full bg-white text-gray-700 border border-gray-200 rounded-full px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Generate Summary
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleSuggestionClick(
-                        "Are they a good fit for my job post?"
-                      )
-                    }
-                    className="w-full bg-white text-gray-700 border border-gray-200 rounded-full px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Are they a good fit for my job post?
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleSuggestionClick("What is their training style?")
-                    }
-                    className="w-full bg-white text-gray-700 border border-gray-200 rounded-full px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    What is their training style?
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="w-full space-y-4">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    {message.role === "assistant" && (
-                      <div className="w-8 h-8 rounded-full bg-[#00B5B5] flex items-center justify-center mr-2">
+                  <div className="flex flex-col gap-2 w-full max-w-sm">
+                    <button
+                      onClick={() =>
+                        handleSuggestionClick("Generate a summary")
+                      }
+                      className="w-full bg-white text-gray-700 border border-gray-200 rounded-full px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      Generate Summary
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleSuggestionClick(
+                          "Are they a good fit for my job post?"
+                        )
+                      }
+                      className="w-full bg-white text-gray-700 border border-gray-200 rounded-full px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      Are they a good fit for my job post?
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleSuggestionClick("What is their training style?")
+                      }
+                      className="w-full bg-white text-gray-700 border border-gray-200 rounded-full px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      What is their training style?
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="w-full space-y-4">
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        message.role === "user"
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      {message.role === "assistant" && (
+                        <div className="w-8 h-8 rounded-full bg-[#00B5B5] flex items-center justify-center mr-2">
+                          <Image
+                            src="/baatcheet-logo.png"
+                            alt="BaatCheet"
+                            width={20}
+                            height={20}
+                            className="rounded-full"
+                          />
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[80%] rounded-lg p-4 relative group shadow-sm ${
+                          message.role === "user"
+                            ? "bg-[#00B5B5] text-white rounded-br-none"
+                            : "bg-white border border-gray-100 rounded-bl-none"
+                        }`}
+                      >
+                        <div
+                          className={`prose prose-sm max-w-none ${
+                            message.role === "user"
+                              ? "prose-invert"
+                              : "!text-black prose-headings:text-black prose-p:text-black prose-li:text-black"
+                          }`}
+                        >
+                          <div
+                            className="text-sm leading-relaxed"
+                            dangerouslySetInnerHTML={{
+                              __html: formatMessage(message.content),
+                            }}
+                          />
+                        </div>
+                        {message.role === "assistant" && (
+                          <button
+                            onClick={() =>
+                              navigator.clipboard.writeText(message.content)
+                            }
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-100 rounded-full"
+                            title="Copy response"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4 text-gray-500"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      {message.role === "user" && (
+                        <div className="w-8 h-8 rounded-full bg-[#00B5B5] flex items-center justify-center ml-2">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 text-white"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-[#00B5B5] flex items-center justify-center">
                         <Image
                           src="/baatcheet-logo.png"
                           alt="BaatCheet"
@@ -332,86 +446,18 @@ export default function Home() {
                           className="rounded-full"
                         />
                       </div>
-                    )}
-                    <div
-                      className={`max-w-[80%] rounded-lg p-4 relative group shadow-sm ${
-                        message.role === "user"
-                          ? "bg-[#00B5B5] text-white rounded-br-none"
-                          : "bg-white border border-gray-100 rounded-bl-none"
-                      }`}
-                    >
-                      <div
-                        className={`text-sm leading-relaxed whitespace-pre-wrap ${
-                          message.role === "user" ? "text-white" : "text-black"
-                        }`}
-                      >
-                        {message.content}
-                      </div>
-                      {message.role === "assistant" && (
-                        <button
-                          onClick={() =>
-                            navigator.clipboard.writeText(message.content)
-                          }
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-100 rounded-full"
-                          title="Copy response"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 text-gray-500"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    {message.role === "user" && (
-                      <div className="w-8 h-8 rounded-full bg-[#00B5B5] flex items-center justify-center ml-2">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 text-white"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#00B5B5] flex items-center justify-center">
-                      <Image
-                        src="/baatcheet-logo.png"
-                        alt="BaatCheet"
-                        width={20}
-                        height={20}
-                        className="rounded-full"
-                      />
-                    </div>
-                    <div className="bg-white border border-gray-100 rounded-lg rounded-bl-none p-4 shadow-sm">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 rounded-full bg-[#00B5B5] animate-bounce"></div>
-                        <div className="w-2 h-2 rounded-full bg-[#00B5B5] animate-bounce delay-100"></div>
-                        <div className="w-2 h-2 rounded-full bg-[#00B5B5] animate-bounce delay-200"></div>
+                      <div className="bg-white border border-gray-100 rounded-lg rounded-bl-none p-4 shadow-sm">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 rounded-full bg-[#00B5B5] animate-bounce"></div>
+                          <div className="w-2 h-2 rounded-full bg-[#00B5B5] animate-bounce delay-100"></div>
+                          <div className="w-2 h-2 rounded-full bg-[#00B5B5] animate-bounce delay-200"></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="relative">
