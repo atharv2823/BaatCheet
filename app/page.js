@@ -7,6 +7,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
@@ -143,69 +144,98 @@ export default function Home() {
     handleSubmit({ preventDefault: () => {} });
   };
 
-   const handleDeleteChat = (chatId, e) => {
-     e.preventDefault();
-     e.stopPropagation();
-     setChats((prev) => prev.filter((chat) => chat.id !== chatId));
-     if (currentChatId === chatId) {
-       setCurrentChatId(null);
-       setMessages([]);
-     }
-   };
-
+  const handleDeleteChat = (chatId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setChats((prev) => prev.filter((chat) => chat.id !== chatId));
+    if (currentChatId === chatId) {
+      setCurrentChatId(null);
+      setMessages([]);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto p-4">
         {/* Chat List Dropdown */}
-        <div className="mb-4">
-          <div className="space-y-2">
-            {chats.map((chat) => (
-              <div
-                key={chat.id}
-                className="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-200"
-              >
-                <button
-                  onClick={() => loadChat(chat.id)}
-                  className={`flex-1 text-left px-2 py-1 ${
-                    currentChatId === chat.id
-                      ? "text-[#00B5B5]"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {chat.messages && chat.messages.length > 0
-                    ? chat.messages[0].content.slice(0, 50) +
-                      (chat.messages[0].content.length > 50 ? "..." : "")
-                    : `New Chat (${new Date(
-                        parseInt(chat.id)
-                      ).toLocaleString()})`}
-                </button>
-                <button
-                  onClick={(e) => handleDeleteChat(chat.id, e)}
-                  className="text-red-500 hover:text-red-700 p-1 rounded"
-                  title="Delete chat"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+        <div className="mb-4 relative">
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="w-full flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+          >
+            <span>Previous Chats ({chats.length})</span>
+            <svg
+              className={`w-5 h-5 transition-transform ${
+                isDropdownOpen ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
 
-        
+          {isDropdownOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-10">
+              <div className="space-y-1 p-2">
+                {chats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    className="flex items-center justify-between hover:bg-gray-50 rounded-lg"
+                  >
+                    <button
+                      onClick={() => {
+                        loadChat(chat.id);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`flex-1 text-left px-3 py-2 ${
+                        currentChatId === chat.id
+                          ? "text-[#00B5B5]"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {chat.messages && chat.messages.length > 0
+                        ? chat.messages[0].content.slice(0, 50) +
+                          (chat.messages[0].content.length > 50 ? "..." : "")
+                        : `New Chat (${new Date(
+                            parseInt(chat.id)
+                          ).toLocaleString()})`}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        handleDeleteChat(chat.id, e);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="text-red-500 hover:text-red-700 p-2 rounded"
+                      title="Delete chat"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Chat Container */}
         <div className="bg-white rounded-lg shadow-lg p-6 mt-10">
